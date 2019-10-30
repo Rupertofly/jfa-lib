@@ -7,14 +7,19 @@
   "author": "Ruby Quail",
   "license": "MIT",
   "private": false,
+  "scripts": {
+    "build": "parcel build src/index.ts --target node"
+  },
   "devDependencies": {
-    "@types/p5": "^0.9.0",
+    "@type-config/standard": "^1.0.1",
+    "@type-config/strict": "^1.0.2",
     "glslify-bundle": "^5.1.1",
     "glslify-deps": "^1.3.1",
     "parcel": "^1.12.3",
+    "parcel-bundler": "^1.12.4",
     "typescript": "^3.6.3"
   },
   "dependencies": {
-    "p5": "^0.9.0"
+    "regl": "^1.3.13"
   }
 }
