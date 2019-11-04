@@ -2,12 +2,13 @@
   "extends": "@type-config/standard",
   "compilerOptions": {
     "outDir": "dist",
+    "allowJs": false,
     "baseUrl": ".",
     "declaration": true,
     "emitDeclarationOnly": true,
     "declarationDir": "types",
     "allowSyntheticDefaultImports": true
   },
-  "include": ["src"],
+  "include": ["src", "tests"],
   "exclude": ["node_modules", "dist"]
 }

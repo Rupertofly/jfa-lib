@@ -1,7 +1,34 @@
 precision mediump float;
 uniform vec2 u_resolution;
 uniform float u_time;
+// #region helperfunctions
+const float EPSILON=.005;
+bool approxEqual(const vec4 a,const vec4 b){
+  return all(
+    lessThan(abs(a-b),vec4(EPSILON))
+  );
+}
 
+bool approxEqual(const vec2 a,const vec2 b){
+  return all(
+    lessThan(abs(a-b),vec2(EPSILON))
+  );
+}
+
+bool between(const vec2 value,const vec2 bottom,const vec2 top){
+  return(
+    all(greaterThan(value,bottom))&&
+    all(lessThan(value,top))
+  );
+}
+
+bool validUv(const vec2 uv){
+  return between(
+    uv,
+    vec2(0.,0.),
+    vec2(1.,1.)
+  );
+}
 float bitwiseANd(float a,float b){
   float result=0.;
   float n=1.;
@@ -13,25 +40,46 @@ float bitwiseANd(float a,float b){
   }
   return result;
 }
-vec4 EncodeData(in vec2 coord,in vec3 color)
-{
-  vec4 ret=vec4(0.);
-  ret.xy=coord;
-  ret.z=floor(color.x*255.)*256.+floor(color.y*255.);
-  ret.w=floor(color.z*255.);
-  return ret;
+vec2 encodeScreenCoordinate(const float value_){
+  float value=value_;
+  return vec2(
+    floor(value/100.),
+    mod(value,100.)
+  );
 }
 
-//============================================================
-void DecodeData(in vec4 data,out vec2 coord,out vec3 color)
-{
-  coord=data.xy;
-  color.x=floor(data.z/256.)/255.;
-  color.y=mod(data.z,256.)/255.;
-  color.z=mod(data.w,256.)/255.;
+float decodeScreenCoordinate(const vec2 channels){
+  return channels.x*100.+channels.y;
 }
+
+float sqDist(vec2 a,vec2 b){
+  return abs(pow((a.x-b.x),2.)+pow((a.y-b.y),2.));
+}
+vec2 cell_closestSeed(const vec4 obj_){
+  vec4 obj=obj_*255.;
+  float x=decodeScreenCoordinate(obj.rg);
+  float y=decodeScreenCoordinate(obj.ba);
+  return vec2(x,y)+vec2(.5);
+}
+vec4 createCell(const vec2 screenCoordinate_){
+  vec2 screenCoordinate=floor(screenCoordinate_);
+  vec2 rg=encodeScreenCoordinate(screenCoordinate.x);
+  vec2 ba=encodeScreenCoordinate(screenCoordinate.y);
+  return vec4(rg,ba)/255.;
+}
+// Return true if `a` and `b` are at most EPSILON apart
+// in any dimension
+vec4 createInvalidCell(){
+  return createCell(vec2(5000.,5000.));
+}
+vec2 flipY(vec2 inpos){
+  return vec2(inpos.x,1.-inpos.y);
+}
+//============================================================
+
+// #endregion
 void main(){
   vec2 uv=-gl_FragCoord.xy/u_resolution;
-  gl_FragColor=vec4(mod(max(uv.x,uv.y),.2)*5.,floor(max(uv.x,uv.y)/5.*sin(u_time),.5,1.));
+  gl_FragColor=vec4(1.,1.,1.,0.);
   
 }

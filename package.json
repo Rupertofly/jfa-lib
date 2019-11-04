@@ -1,6 +1,6 @@
 {
   "name": "jfa-lib",
-  "version": "0.8",
+  "version": "0.8.0",
   "description": "myjfaApp",
   "main": "dist/index.js",
   "repository": "git@github.com:Rupertofly/jfa-lib.git",
@@ -8,7 +8,8 @@
   "license": "MIT",
   "private": false,
   "scripts": {
-    "build": "parcel build src/index.ts --target node"
+    "build": "parcel build src/index.ts --target node",
+    "test": "parcel tests/test.html"
   },
   "devDependencies": {
     "@type-config/standard": "^1.0.1",
