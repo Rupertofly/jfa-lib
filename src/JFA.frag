@@ -1,6 +1,8 @@
 precision mediump float;
-uniform vec2 u_resolution;
-uniform float u_time;
+uniform vec2 res;
+uniform vec4 bgColor;
+uniform float jumpDistance;
+uniform sampler2D inputTexture;
 // #region helperfunctions
 const float EPSILON=.005;
 bool approxEqual(const vec4 a,const vec4 b){
@@ -79,7 +81,25 @@ vec2 flipY(vec2 inpos){
 
 // #endregion
 void main(){
-  vec2 uv=-gl_FragCoord.xy/u_resolution;
-  gl_FragColor=vec4(1.,1.,1.,0.);
+  vec2 fragPos=gl_FragCoord.xy;
+  float bestDistance=100000.;
+  vec4 bestCell=createInvalidCell();
+  vec2 pixelSize=1./res;
+  for(float xOffset=-1.;xOffset<=1.;xOffset++){
+    for(float yOffset=-1.;yOffset<=1.;yOffset++){
+      vec2 offset=jumpDistance*vec2(xOffset,yOffset);
+      vec2 testPos=fragPos+offset;
+      vec2 testUV=testPos/res;
+      if(!validUv(testUV))continue;
+      vec4 testCell=texture2D(inputTexture,testUV);
+      vec2 seedPostion=cell_closestSeed(testCell);
+      float seedDistance=distance(seedPostion,fragPos);
+      if(seedDistance<bestDistance){
+        bestDistance=seedDistance;
+        bestCell=testCell;
+      }
+    }
+  }
+  gl_FragColor=bestCell;
   
 }

@@ -8,7 +8,7 @@ document.body.appendChild(b);
 console.log(b);
 let x = new jf.JFAProgram({
   reglInstance: regl(b),
-  sourceBackground: [0.98, 0.97, 0.98, 0.0],
+  sourceBackground: [0.18, 0.97, 0.98, 1.0],
   canvasHeight: b.height,
   canvasWidth: b.width,
 });

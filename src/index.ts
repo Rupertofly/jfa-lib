@@ -1,7 +1,7 @@
 /// <reference path="./shaders.d.ts" />
 import * as regl from 'regl';
 import fg from './JFA.frag';
-import { timeout } from 'q';
+import prepShader from './prep.frag';
 type vec4 = [number, number, number, number];
 interface JFAConstructorOptions {
   reglInstance: regl.Regl;
@@ -9,7 +9,11 @@ interface JFAConstructorOptions {
   canvasHeight?: number;
   sourceBackground?: vec4;
 }
-
+type JFAprops = {
+  inputTexture: regl.Texture2D;
+  jumpDistance: number;
+  output: regl.Framebuffer2D | null;
+};
 export class JFAProgram {
   //#region setup
   private reglInstance: regl.Regl;
@@ -20,7 +24,13 @@ export class JFAProgram {
   frontTexture: regl.Texture2D;
   backBuffer: regl.Framebuffer2D;
   backTexture: regl.Texture2D;
+  radius: number;
   vertexSetup: regl.DrawCommand<regl.DefaultContext, {}>;
+  private sourceTexture?: regl.Texture2D;
+  resultTexture: regl.Texture2D;
+  outputTexture: regl.Texture2D;
+  prepFunction: regl.DrawCommand<regl.DefaultContext, {}>;
+  JFAFunction: regl.DrawCommand<any, JFAprops>;
   /**
    * Create a new JFA Program
    * @param param0 JFAContructorOptions
@@ -41,6 +51,10 @@ export class JFAProgram {
     const back = this.newFramebuffer(width, height);
     this.backBuffer = back[0];
     this.backTexture = back[1];
+    this.radius = Math.max(
+      this.canvasWidth,
+      this.canvasHeight
+    );
     const { reglInstance: gl } = this;
     const startingTime = Date.now();
     this.vertexSetup = gl({
@@ -71,10 +85,29 @@ export class JFAProgram {
       uniform float t;
       uniform vec4 bgColor;
       void main(){
-        float r = uv.x;
-        float g = uv.y;
         gl_FragColor = bgColor;
       }`,
+    });
+    this.prepFunction = gl({
+      frag: prepShader,
+      uniforms: {
+        inputTexture: () => this.sourceTexture,
+      },
+      framebuffer: () => this.frontBuffer,
+    });
+    this.JFAFunction = gl({
+      frag: fg,
+      uniforms: {
+        inputTexture: (c, p) => p.inputTexture,
+        jumpDistance: (c, p) => p.jumpDistance,
+      },
+      framebuffer: (c, p) => p.output,
+    });
+    this.resultTexture = gl.texture({
+      shape: [width, height],
+    });
+    this.outputTexture = gl.texture({
+      shape: [width, height],
     });
     gl.clear({ color: this.bgColor });
     const rd = () => {
@@ -85,7 +118,61 @@ export class JFAProgram {
   }
   //#endregion
   //#region publicFunctions
-  public runJFA() {}
+  public set inputTexture(
+    input: regl.Texture2DOptions | regl.TextureImageData
+  ) {
+    if (this.sourceTexture) {
+      this.sourceTexture(input as any);
+    } else {
+      this.sourceTexture = this.reglInstance.texture(
+        input as any
+      );
+    }
+  }
+  public runJFA() {
+    if (!this.sourceTexture)
+      throw new Error('Source Texture not Set');
+    this.radius = Math.max(
+      this.canvasWidth,
+      this.canvasHeight
+    );
+    const totalSteps =
+      Math.floor(Math.log2(this.radius)) + 1;
+    this.vertexSetup(context => {
+      this.prepFunction();
+      const textureAccess = [
+        this.backTexture,
+        this.frontTexture,
+      ];
+      const writeAccess = [
+        this.frontBuffer,
+        this.backBuffer,
+      ];
+      for (let i = 0; i < totalSteps; i++) {
+        const fb = writeAccess[i % 2];
+        const iTex = textureAccess[i % 2];
+        const jumpDistance = Math.pow(
+          2,
+          totalSteps - i - 1
+        );
+        this.JFAFunction({
+          inputTexture: iTex,
+          jumpDistance,
+          output: fb,
+        });
+      }
+      this.JFAFunction(
+        {
+          output: writeAccess[totalSteps % 2],
+        },
+        () =>
+          this.resultTexture({
+            copy: true,
+            shape: [this.canvasWidth, this.canvasHeight],
+          })
+      );
+    });
+  }
   //#endregion
   //#region privateFunctions
   private newFramebuffer(width = 500, height = 500) {

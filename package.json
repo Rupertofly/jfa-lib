@@ -9,7 +9,7 @@
   "private": false,
   "scripts": {
     "build": "parcel build src/index.ts --target node",
-    "test": "parcel tests/test.html"
+    "test": "parcel tests/test.html -d tests/output"
   },
   "devDependencies": {
     "@type-config/standard": "^1.0.1",
